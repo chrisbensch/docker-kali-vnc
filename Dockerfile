@@ -1,12 +1,10 @@
 ################################################################################
-# Built with arch: amd64 flavor: xfce4 image: ubuntu:20.04
-################################################################################
 # base system
 ################################################################################
 
-FROM ubuntu:20.04 as system
+FROM kalilinux/kali-bleeding-edge as system
 
-RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list;
+#RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list;
 
 # built-in packages
 ENV DEBIAN_FRONTEND noninteractive
@@ -14,9 +12,11 @@ RUN apt update && apt -y dist-upgrade \
   && apt install -y --no-install-recommends --allow-unauthenticated software-properties-common curl apache2-utils \
   supervisor nginx sudo net-tools zenity xz-utils dbus-x11 x11-utils alsa-utils mesa-utils libgl1-mesa-dri openssh-client ca-certificates htop
 
+RUN apt -y install kali-linux-headless
+
 # install debs error if combine together
 RUN apt install -y --no-install-recommends --allow-unauthenticated xvfb x11vnc \
-  vim-tiny firefox ttf-ubuntu-font-family ttf-wqy-zenhei \
+  vim-tiny firefox-esr ttf-ubuntu-font-family ttf-wqy-zenhei \
   gtk2-engines-murrine \
   gnome-themes-standard \
   gtk2-engines-pixbuf \
@@ -63,41 +63,43 @@ RUN apt install -y gpg-agent \
   && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add \
   && rm google-chrome-stable_current_amd64.deb
 
-RUN apt install -y --no-install-recommends --allow-unauthenticated \
-  xfce4 \
-  arc-theme \
-  xubuntu-desktop \
-  xubuntu-artwork \
-  xubuntu-default-settings \
-  xserver-xorg-video-all \
-  xserver-xorg-video-dummy \
-  xfonts-cyrillic \
-  xfonts-100dpi \
-  xfonts-75dpi \
-  mesa-utils-extra \
-  xfonts-scalable \
-  xorgxrdp \
-  xfce4-appmenu-plugin \
-  xfce4-datetime-plugin \
-  xfce4-goodies \
-  xfce4-terminal \
-  xfce4-taskmanager \
-  desktop-file-utils \
-  fonts-dejavu \
-  fonts-noto \
-  fonts-noto-color-emoji \
-  fonts-ubuntu \
-  menu \
-  menu-xdg \
-  xdg-utils \
-  xfce4-statusnotifier-plugin \
-  xfce4-whiskermenu-plugin \
-  xfonts-base \
-  xfpanel-switch \
-  xinput \
-  xutils \
-  xfonts-base \
-  xterm
+RUN apt install -y kali-desktop-xfce
+
+#RUN apt install -y --no-install-recommends --allow-unauthenticated \
+#  xfce4 \
+#  arc-theme \
+#  xubuntu-desktop \
+#  xubuntu-artwork \
+#  xubuntu-default-settings \
+#  xserver-xorg-video-all \
+#  xserver-xorg-video-dummy \
+#  xfonts-cyrillic \
+#  xfonts-100dpi \
+#  xfonts-75dpi \
+#  mesa-utils-extra \
+#  xfonts-scalable \
+#  xorgxrdp \
+#  xfce4-appmenu-plugin \
+#  xfce4-datetime-plugin \
+#  xfce4-goodies \
+#  xfce4-terminal \
+#  xfce4-taskmanager \
+#  desktop-file-utils \
+#  fonts-dejavu \
+#  fonts-noto \
+#  fonts-noto-color-emoji \
+#  fonts-ubuntu \
+#  menu \
+#  menu-xdg \
+#  xdg-utils \
+#  xfce4-statusnotifier-plugin \
+#  xfce4-whiskermenu-plugin \
+#  xfonts-base \
+#  xfpanel-switch \
+#  xinput \
+#  xutils \
+#  xfonts-base \
+#  xterm
 
 # tini to fix subreap
 ARG TINI_VERSION=v0.19.0
@@ -115,22 +117,19 @@ RUN apt update \
 # python library
 COPY rootfs/usr/local/lib/web/backend/requirements.txt /tmp/
 RUN apt-get update \
-  && dpkg-query -W -f='${Package}\n' > /tmp/a.txt \
-  && apt-get install -y python3-pip python3-dev build-essential \
-	&& pip3 install setuptools wheel && pip3 install -r /tmp/requirements.txt \
-  && ln -s /usr/bin/python3 /usr/local/bin/python \
-  && dpkg-query -W -f='${Package}\n' > /tmp/b.txt \
-  && apt-get remove -y `diff --changed-group-format='%>' --unchanged-group-format='' /tmp/a.txt /tmp/b.txt | xargs` \
-  && apt-get autoclean -y \
-  && apt-get autoremove -y \
-  && rm -rf /var/lib/apt/lists/* \
-  && rm -rf /var/cache/apt/* /tmp/a.txt /tmp/b.txt
+  && apt-get install -y python3-pip python3-dev build-essential
+
+RUN pip3 install setuptools wheel && pip3 install -r /tmp/requirements.txt \
+  && ln -s /usr/bin/python3 /usr/local/bin/python
+  #&& apt-get autoclean -y \
+  #&& apt-get autoremove -y
+  ##&& rm -rf /var/lib/apt/lists/*
 
 
 ################################################################################
 # builder
 ################################################################################
-FROM ubuntu:20.04 as builder
+FROM kalilinux/kali-bleeding-edge as builder
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl ca-certificates gnupg patch
